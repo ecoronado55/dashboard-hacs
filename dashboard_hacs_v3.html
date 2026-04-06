@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Instalación - Hacs 1,2,3 con Gráficos por Familia</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #1e3a5f;
+            font-size: 26px;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #5a6e8a;
+            margin-bottom: 25px;
+            border-left: 4px solid #2c7da0;
+            padding-left: 15px;
+        }
+        /* Gráficos */
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+        .chart-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px 15px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .chart-card h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #2c5a7a;
+        }
+        .chart-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+        }
+        .chart-percent {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            font-weight: 800;
+            color: #1e3a5f;
+        }
+        .chart-label {
+            margin-top: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #3a6b92;
+        }
+        /* Filtros */
+        .filters-bar {
+            background: white;
+            padding: 16px 22px;
+            border-radius: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            align-items: flex-end;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 180px;
+        }
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #3b5a7c;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .filter-group input, .filter-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #cddfe7;
+            border-radius: 40px;
+            font-size: 14px;
+            background: #fff;
+        }
+        button {
+            background: #e2e8f0;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #cbd5e1;
+        }
+        .btn-excel {
+            background: #1e6f3f;
+            color: white;
+        }
+        .btn-excel:hover {
+            background: #0f5a34;
+        }
+        /* Tabla */
+        .table-wrapper {
+            background: white;
+            border-radius: 20px;
+            overflow-x: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-top: 25px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 950px;
+        }
+        th {
+            background: #1e3a5f;
+            color: white;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 10px 10px;
+            border-bottom: 1px solid #e6edf4;
+            vertical-align: top;
+        }
+        tr:hover td {
+            background: #f8fafd;
+        }
+        .component-name {
+            line-height: 1.4;
+        }
+        .component-name .tech-name {
+            font-weight: 700;
+            font-size: 12px;
+            color: #1e3a5f;
+        }
+        .component-name .spanish-name {
+            font-size: 11px;
+            color: #5f7f9e;
+            margin-top: 3px;
+        }
+        input.hac-input {
+            width: 80px;
+            padding: 8px 8px;
+            text-align: center;
+            border: 1px solid #bdd4e2;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        input.hac-input:focus {
+            outline: none;
+            border-color: #2c7da0;
+            box-shadow: 0 0 0 2px rgba(44,125,160,0.2);
+        }
+        .badge-family {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #e2eafc;
+        }
+        .total-row {
+            background: #eef3fa;
+            font-weight: 700;
+        }
+        .total-row td {
+            border-top: 2px solid #cbdde9;
+        }
+        .footer-notes {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #5f7f9e;
+            text-align: center;
+        }
+        .filter-info {
+            background: #e8f0fe;
+            border-radius: 16px;
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #1e5a7a;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        @media (max-width: 800px) {
+            .charts-container { grid-template-columns: 1fr 1fr; }
+            .chart-wrapper { width: 150px; height: 150px; }
+            .chart-percent { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📋 Panel de Instalación · Hacs 1 / Hacs 2 / Hacs 3</h1>
+    <div class="subtitle">Materiales estructurales · Cantidades instaladas por etapa · Porcentajes calculados sobre la familia seleccionada</div>
+
+    <!-- 4 GRÁFICOS CIRCULARES CON PORCENTAJE EN EL CENTRO -->
+    <div class="charts-container">
+        <div class="chart-card">
+            <h3>Hacs 1 - Avance</h3>
+            <div class="chart-wrapper">
+                <canvas id="chartHacs1" width="180" height="180"></canvas>
+                <div class="chart-percent" id="percentHacs1">0%</div>
+            </div>
+            <div class="chart-label" id="labelHacs1">0 / 0 unidades</div>
+        </div>
+        <div class="chart-card">
+            <h3>Hacs 2 - Avance</h3>
+            <div class="chart-wrapper">
+                <canvas id="chartHacs2" width="180" height="180"></canvas>
+                <div class="chart-percent" id="percentHacs2">0%</div>
+            </div>
+            <div class="chart-label" id="labelHacs2">0 / 0 unidades</div>
+        </div>
+        <div class="chart-card">
+            <h3>Hacs 3 - Avance</h3>
+            <div class="chart-wrapper">
+                <canvas id="chartHacs3" width="180" height="180"></canvas>
+                <div class="chart-percent" id="percentHacs3">0%</div>
+            </div>
+            <div class="chart-label" id="labelHacs3">0 / 0 unidades</div>
+        </div>
+        <div class="chart-card">
+            <h3>Consolidado (Hacs 1+2+3)</h3>
+            <div class="chart-wrapper">
+                <canvas id="chartTotal" width="180" height="180"></canvas>
+                <div class="chart-percent" id="percentTotal">0%</div>
+            </div>
+            <div class="chart-label" id="labelTotal">0 / 0 unidades</div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-bar">
+        <div class="filter-group">
+            <label>Buscar por ID o nombre</label>
+            <input type="text" id="searchInput" placeholder="Ej: TRUSS, D-166782, poste ...">
+        </div>
+        <div class="filter-group">
+            <label>Familia</label>
+            <select id="familySelect">
+                <option value="all">Todas las familias</option>
+                <option value="UPRIGHT POST">UPRIGHT POST</option>
+                <option value="TRUSS">TRUSS</option>
+                <option value="CONTAINMENT">CONTAINMENT</option>
+                <option value="DOOR">DOOR</option>
+                <option value="CEILING">CEILING</option>
+                <option value="BRACKET">BRACKET</option>
+                <option value="ARM">ARM</option>
+                <option value="OTHER">OTHER</option>
+            </select>
+        </div>
+        <button id="clearFilters">Limpiar filtros</button>
+        <button id="exportExcelBtn" class="btn-excel">Exportar a CSV (Excel)</button>
+    </div>
+
+    <!-- Tabla de materiales con cantidades Hacs 1,2,3 -->
+    <div class="table-wrapper">
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Nombre del componente</th><th>Familia</th>
+                    <th>Hacs 1</th>
+                    <th>Hacs 2</th>
+                    <th>Hacs 3</th>
+                    <th>Total x material</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot id="tableFooter"></tfoot>
+        </table>
+    </div>
+    <div class="footer-notes">
+        💡 Edita las cantidades directamente en la tabla. Los gráficos muestran el % de avance sobre el total de materiales de la familia seleccionada.<br>
+        Los datos se guardan automáticamente en el navegador.
+    </div>
+</div>
+
+<script>
+    // ---------- BASE DE DATOS DE COMPONENTES ----------
+    // Cada componente tiene:
+    // - id: código
+    // - techName: nombre técnico (ej: "TW-V2-5016 - UPRIGHT POST WELDMENT 2")
+    // - spanishName: nombre en español (ej: "Poste azul No. 2")
+    // - familia
+    const componentesBase = [
+        { id:"D-166772", techName:"TW-V2-5016 - UPRIGHT POST WELDMENT 2", spanishName:"Poste azul No. 2", familia:"UPRIGHT POST" },
+        { id:"D-166773", techName:"TW-V2-5000 - UPRIGHT POST WELDMENT 1", spanishName:"Poste rojo No. 1", familia:"UPRIGHT POST" },
+        { id:"D-166775", techName:"TW-V2-5017 - UPRIGHT POST WELDMENT 3", spanishName:"Poste verde No. 3", familia:"UPRIGHT POST" },
+        { id:"D-166776", techName:"TW-V2-5013 - UPRIGHT POST WELDMENT 4", spanishName:"Poste amarillo No. 4", familia:"UPRIGHT POST" },
+        { id:"D-166777", techName:"TW-V2-5018 - UPRIGHT POST WELDMENT 5", spanishName:"Poste gris No. 5", familia:"UPRIGHT POST" },
+        { id:"D-166782", techName:"TW-V2-5008 - CONTAINMENT TRUSS 1", spanishName:"Estructura contención principal", familia:"CONTAINMENT" },
+        { id:"D-166784", techName:"TW-V2-5014 - FRONT UPPER TRUSS ASSEMBLY", spanishName:"Armazón superior frontal", familia:"TRUSS" },
+        { id:"D-166786", techName:"TW-V2-5021 - PIPE PASS THRU ASSEMBLY", spanishName:"Paso de tubería", familia:"OTHER" },
+        { id:"D-166781", techName:"TW-V2-5003 - ARM ASSEMBLY 3", spanishName:"Brazo estructural Tipo 3", familia:"ARM" },
+        { id:"D-166794", techName:"TW-V2-5003 - L-ARM ASSEMBLY 3 LONG", spanishName:"Brazo largo en L", familia:"ARM" },
+        { id:"D-166788", techName:"TW-V2-5016 - FRONT LOWER TRUSS ASSEMBLY", spanishName:"Armazón inferior frontal", familia:"TRUSS" },
+        { id:"D-166789", techName:"TW-V2-5020 - FRONT DOOR TRUSS ASSEMBLY", spanishName:"Estructura puerta frontal", familia:"DOOR" },
+        { id:"D-166796", techName:"TW-V2-5020 - FRONT DOOR TRUSS ASSEMBLY 1", spanishName:"Estructura puerta frontal secundaria", familia:"DOOR" },
+        { id:"D-166797", techName:"TW-V2-5031 - LEFT SIDE DOOR BLANK PANEL", spanishName:"Panel ciego lateral izquierdo", familia:"DOOR" },
+        { id:"D-166798", techName:"TW-V2-5030 - RIGHT SIDE DOOR BLANK PANEL", spanishName:"Panel ciego lateral derecho", familia:"DOOR" },
+        { id:"D-166799", techName:"TW-V2-5003 - UPPER TRUSS", spanishName:"Armazón superior", familia:"TRUSS" },
+        { id:"D-166800", techName:"TW-V2-5020 - PIPE HANGER WELDMENT", spanishName:"Soporte colgante tubería", familia:"BRACKET" },
+        { id:"D-167075", techName:"TW-V2-5010 - DOUBLE DOOR MOUNTING WELDMENT", spanishName:"Montaje puerta doble", familia:"DOOR" },
+        { id:"D-167077", techName:"TW-V2-5007 - TRUSS 4", spanishName:"Armazón reticulado Tipo 4", familia:"TRUSS" },
+        { id:"D-167084", techName:"TW-V2-5010 - CONTAINMENT 99x20 ASSEMBLY", spanishName:"Contención 99x20", familia:"CONTAINMENT" },
+        { id:"D-167076", techName:"TW-V2-5008 - TRUSS 3", spanishName:"Armazón reticulado Tipo 3", familia:"TRUSS" },
+        { id:"D-167085", techName:"TW-V2-5012 - CONTAINMENT 99x14.6 ASSEMBLY", spanishName:"Contención 99x14.6", familia:"CONTAINMENT" },
+        { id:"D-167086", techName:"TW-V2-5013 - CONTAINMENT 16.3x42.4 ASSEMBLY", spanishName:"Contención 16.3x42.4", familia:"CONTAINMENT" },
+        { id:"D-167082", techName:"TW-V2-5009 - LOWER TRUSS 2", spanishName:"Armazón inferior Tipo 2", familia:"TRUSS" },
+        { id:"D-167088", techName:"TW-V2-5079 - CELING 36x147", spanishName:"Panel techo 36x147", familia:"CEILING" },
+        { id:"D-167095", techName:"TW-V2-5404 - DOOR SIDE TRIANGULAR FILL PLATE", spanishName:"Placa relleno triangular", familia:"BRACKET" },
+        { id:"D-167095-SIM", techName:"TW-V2-5405 - DOOR SIDE TRIANGULAR FILL PLATE SIM", spanishName:"Placa relleno triangular SIM", familia:"BRACKET" },
+        { id:"D-167361", techName:"TW-V2-5417 - TW SIGN COVER FRONT PANEL", spanishName:"Panel frontal cubierta letrero", familia:"OTHER" },
+        { id:"D-167362", techName:"TW-V2-5415 - LINEAR BALANCING PANEL", spanishName:"Panel de balance lineal", familia:"OTHER" },
+        { id:"D-167365", techName:"TW-V2-5065 - TW SIGN COVER ASSEMBLY", spanishName:"Ensamblaje cubierta letrero", familia:"OTHER" },
+        { id:"D-167360", techName:"TW-V2-5414 - BOLT ON TUBE BRACKET", spanishName:"Soporte tubular atornillado", familia:"BRACKET" },
+        { id:"D-167096", techName:"TW-V2-5401 - SLOTTED FLOOR BRACKET", spanishName:"Soporte piso ranurado", familia:"BRACKET" },
+        { id:"D-167097", techName:"TW-V2-5410 - RIGHT POST FLASHING", spanishName:"Bisel derecho poste", familia:"BRACKET" },
+        { id:"D-167097-SIM", techName:"TW-V2-5411 - LEFT POST FLASHING", spanishName:"Bisel izquierdo poste", familia:"BRACKET" },
+        { id:"D-167098", techName:"TW-V2-5407 - ANGLED CONTAINMENT BRACKET", spanishName:"Soporte angular contención", familia:"BRACKET" },
+        { id:"D-167840", techName:"TW-V2-5078 - CELING 25x99", spanishName:"Panel techo 25x99", familia:"CEILING" }
+    ];
+
+    // Cargar/guardar cantidades
+    let instalaciones = {};
+    function loadInstalaciones() {
+        const guardado = localStorage.getItem("hacs_instalaciones_v3");
+        if(guardado) {
+            instalaciones = JSON.parse(guardado);
+        } else {
+            componentesBase.forEach(c => {
+                instalaciones[c.id] = { h1:0, h2:0, h3:0 };
+            });
+        }
+    }
+    function saveInstalaciones() {
+        localStorage.setItem("hacs_instalaciones_v3", JSON.stringify(instalaciones));
+    }
+    loadInstalaciones();
+
+    // Variables para gráficos
+    let chart1, chart2, chart3, chartTotal;
+
+    // Función que obtiene el conjunto de materiales según el filtro de familia actual
+    function getMaterialesFiltrados() {
+        const familiaFiltro = document.getElementById('familySelect').value;
+        if(familiaFiltro === 'all') {
+            return componentesBase;
+        } else {
+            return componentesBase.filter(c => c.familia === familiaFiltro);
+        }
+    }
+
+    function actualizarGraficos() {
+        const materialesFiltrados = getMaterialesFiltrados();
+        const totalMateriales = materialesFiltrados.length;
+        
+        let sumaH1 = 0, sumaH2 = 0, sumaH3 = 0;
+        materialesFiltrados.forEach(c => {
+            const cant = instalaciones[c.id] || { h1:0, h2:0, h3:0 };
+            sumaH1 += cant.h1 || 0;
+            sumaH2 += cant.h2 || 0;
+            sumaH3 += cant.h3 || 0;
+        });
+        
+        // El máximo posible es 1 unidad por material por cada Hacs
+        const maxPosible = totalMateriales;
+        const porc1 = maxPosible > 0 ? Math.min(100, (sumaH1 / maxPosible) * 100) : 0;
+        const porc2 = maxPosible > 0 ? Math.min(100, (sumaH2 / maxPosible) * 100) : 0;
+        const porc3 = maxPosible > 0 ? Math.min(100, (sumaH3 / maxPosible) * 100) : 0;
+        const sumaTotal = sumaH1 + sumaH2 + sumaH3;
+        const maxTotal = maxPosible * 3;
+        const porcTotal = maxTotal > 0 ? Math.min(100, (sumaTotal / maxTotal) * 100) : 0;
+        
+        document.getElementById('percentHacs1').innerText = Math.round(porc1) + "%";
+        document.getElementById('percentHacs2').innerText = Math.round(porc2) + "%";
+        document.getElementById('percentHacs3').innerText = Math.round(porc3) + "%";
+        document.getElementById('percentTotal').innerText = Math.round(porcTotal) + "%";
+        
+        document.getElementById('labelHacs1').innerHTML = `${sumaH1} / ${maxPosible} unidades`;
+        document.getElementById('labelHacs2').innerHTML = `${sumaH2} / ${maxPosible} unidades`;
+        document.getElementById('labelHacs3').innerHTML = `${sumaH3} / ${maxPosible} unidades`;
+        document.getElementById('labelTotal').innerHTML = `${sumaTotal} / ${maxTotal} unidades`;
+        
+        // Actualizar gráficos
+        if(chart1) chart1.destroy();
+        if(chart2) chart2.destroy();
+        if(chart3) chart3.destroy();
+        if(chartTotal) chartTotal.destroy();
+        
+        const ctx1 = document.getElementById('chartHacs1').getContext('2d');
+        const ctx2 = document.getElementById('chartHacs2').getContext('2d');
+        const ctx3 = document.getElementById('chartHacs3').getContext('2d');
+        const ctxTotal = document.getElementById('chartTotal').getContext('2d');
+        
+        chart1 = new Chart(ctx1, {
+            type: 'doughnut',
+            data: { datasets: [{ data: [porc1, 100-porc1], backgroundColor: ['#2c7da0', '#e2e8f0'], borderWidth: 0 }] },
+            options: { cutout: '70%', plugins: { tooltip: { enabled: false }, legend: { display: false } } }
+        });
+        chart2 = new Chart(ctx2, {
+            type: 'doughnut',
+            data: { datasets: [{ data: [porc2, 100-porc2], backgroundColor: ['#2c7da0', '#e2e8f0'], borderWidth: 0 }] },
+            options: { cutout: '70%', plugins: { tooltip: { enabled: false }, legend: { display: false } } }
+        });
+        chart3 = new Chart(ctx3, {
+            type: 'doughnut',
+            data: { datasets: [{ data: [porc3, 100-porc3], backgroundColor: ['#2c7da0', '#e2e8f0'], borderWidth: 0 }] },
+            options: { cutout: '70%', plugins: { tooltip: { enabled: false }, legend: { display: false } } }
+        });
+        chartTotal = new Chart(ctxTotal, {
+            type: 'doughnut',
+            data: { datasets: [{ data: [porcTotal, 100-porcTotal], backgroundColor: ['#1e6f3f', '#e2e8f0'], borderWidth: 0 }] },
+            options: { cutout: '70%', plugins: { tooltip: { enabled: false }, legend: { display: false } } }
+        });
+    }
+
+    let currentFilter = { search: '', familia: 'all' };
+
+    function renderizarTabla() {
+        const searchTerm = currentFilter.search.toLowerCase();
+        const familiaFiltro = currentFilter.familia;
+        
+        let filtered = componentesBase.filter(c => {
+            if(familiaFiltro !== 'all' && c.familia !== familiaFiltro) return false;
+            if(searchTerm && !c.id.toLowerCase().includes(searchTerm) && !c.techName.toLowerCase().includes(searchTerm) && !c.spanishName.toLowerCase().includes(searchTerm)) return false;
+            return true;
+        });
+        
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        let totalH1=0, totalH2=0, totalH3=0, totalGeneral=0;
+        
+        filtered.forEach(comp => {
+            const cant = instalaciones[comp.id] || { h1:0, h2:0, h3:0 };
+            const suma = (cant.h1||0) + (cant.h2||0) + (cant.h3||0);
+            totalH1 += cant.h1||0;
+            totalH2 += cant.h2||0;
+            totalH3 += cant.h3||0;
+            totalGeneral += suma;
+            
+            const row = tbody.insertRow();
+            row.insertCell(0).innerText = comp.id;
+            
+            // Nombre del componente: línea técnica + línea español
+            const cellNombre = row.insertCell(1);
+            cellNombre.innerHTML = `<div class="component-name">
+                                        <div class="tech-name">${comp.techName}</div>
+                                        <div class="spanish-name">${comp.spanishName}</div>
+                                    </div>`;
+            
+            row.insertCell(2).innerHTML = `<span class="badge-family">${comp.familia}</span>`;
+            
+            // Hacs 1
+            const td1 = row.insertCell(3);
+            const input1 = document.createElement('input');
+            input1.type = 'number';
+            input1.value = cant.h1;
+            input1.className = 'hac-input';
+            input1.min = 0;
+            input1.step = 1;
+            input1.addEventListener('change', (function(id) {
+                return function(e) { 
+                    let val = parseInt(e.target.value) || 0;
+                    if(val<0) val=0;
+                    instalaciones[id].h1 = val;
+                    saveInstalaciones();
+                    renderizarTabla();
+                    actualizarGraficos();
+                };
+            })(comp.id));
+            td1.appendChild(input1);
+            
+            // Hacs 2
+            const td2 = row.insertCell(4);
+            const input2 = document.createElement('input');
+            input2.type = 'number';
+            input2.value = cant.h2;
+            input2.className = 'hac-input';
+            input2.min = 0;
+            input2.addEventListener('change', (function(id) {
+                return function(e) { 
+                    let val = parseInt(e.target.value) || 0;
+                    if(val<0) val=0;
+                    instalaciones[id].h2 = val;
+                    saveInstalaciones();
+                    renderizarTabla();
+                    actualizarGraficos();
+                };
+            })(comp.id));
+            td2.appendChild(input2);
+            
+            // Hacs 3
+            const td3 = row.insertCell(5);
+            const input3 = document.createElement('input');
+            input3.type = 'number';
+            input3.value = cant.h3;
+            input3.className = 'hac-input';
+            input3.min = 0;
+            input3.addEventListener('change', (function(id) {
+                return function(e) { 
+                    let val = parseInt(e.target.value) || 0;
+                    if(val<0) val=0;
+                    instalaciones[id].h3 = val;
+                    saveInstalaciones();
+                    renderizarTabla();
+                    actualizarGraficos();
+                };
+            })(comp.id));
+            td3.appendChild(input3);
+            
+            row.insertCell(6).innerHTML = `<span style="font-weight:700;">${suma}</span>`;
+        });
+        
+        // Fila de totales
+        const tfoot = document.getElementById('tableFooter');
+        tfoot.innerHTML = '';
+        if(filtered.length > 0) {
+            let footRow = tfoot.insertRow();
+            footRow.classList.add('total-row');
+            footRow.insertCell(0).innerHTML = '<strong>TOTALES</strong>';
+            footRow.insertCell(1).innerHTML = '';
+            footRow.insertCell(2).innerHTML = '';
+            footRow.insertCell(3).innerHTML = `<strong>${totalH1}</strong>`;
+            footRow.insertCell(4).innerHTML = `<strong>${totalH2}</strong>`;
+            footRow.insertCell(5).innerHTML = `<strong>${totalH3}</strong>`;
+            footRow.insertCell(6).innerHTML = `<strong>${totalGeneral}</strong>`;
+        }
+    }
+    
+    // Eventos
+    function actualizarTodo() {
+        renderizarTabla();
+        actualizarGraficos();
+    }
+    
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        currentFilter.search = e.target.value;
+        actualizarTodo();
+    });
+    document.getElementById('familySelect').addEventListener('change', (e) => {
+        currentFilter.familia = e.target.value;
+        actualizarTodo();
+    });
+    document.getElementById('clearFilters').addEventListener('click', () => {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('familySelect').value = 'all';
+        currentFilter = { search: '', familia: 'all' };
+        actualizarTodo();
+    });
+    
+    // Exportar CSV
+    document.getElementById('exportExcelBtn').addEventListener('click', () => {
+        let csvRows = [["ID","Nombre Técnico","Nombre Español","Familia","Hacs 1","Hacs 2","Hacs 3","Total Instalado"]];
+        componentesBase.forEach(c => {
+            const cant = instalaciones[c.id];
+            const total = (cant.h1||0)+(cant.h2||0)+(cant.h3||0);
+            csvRows.push([c.id, c.techName, c.spanishName, c.familia, cant.h1, cant.h2, cant.h3, total]);
+        });
+        const csvContent = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute("download","instalacion_hacs_completa.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    });
+    
+    actualizarTodo();
+</script>
+</body>
+</html>
